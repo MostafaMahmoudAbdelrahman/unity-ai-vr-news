@@ -8,8 +8,9 @@ from datetime import datetime
 
 # --- CONFIG ---
 DATE_STR = datetime.now().strftime("%Y-%m-%d")
-OUT_HTML_LATEST = "index.html"                  # latest digest
-OUT_HTML_ARCHIVE = f"news_{DATE_STR}.html"      # archive file
+OUT_HTML_LATEST = "index.html"
+OUT_HTML_ARCHIVE = f"news_{DATE_STR}.html"
+OUT_HTML_LIST = "archive.html"
 FEEDS = [
     "https://blog.unity.com/rss",
     "https://www.roadtovr.com/feed/",
@@ -45,7 +46,7 @@ def summarize(title, url, snippet):
     model = genai.GenerativeModel("gemini-1.5-flash")
     return model.generate_content(prompt).text
 
-def build_html(items):
+def build_html(items, date):
     tpl = Template("""
     <html>
       <head><meta charset="utf-8"><title>Unity AI VR Daily News</title></head>
@@ -59,11 +60,36 @@ def build_html(items):
           </section>
         {% endfor %}
         <hr>
-        <p><a href="index.html">Latest</a> | Archive below</p>
+        <p><a href="archive.html">View Archive</a></p>
       </body>
     </html>
     """)
-    return tpl.render(items=items, date=datetime.now().strftime("%Y-%m-%d"))
+    return tpl.render(items=items, date=date)
+
+def update_archive():
+    # find all news_YYYY-MM-DD.html files
+    archive_files = sorted(
+        [f for f in os.listdir(".") if f.startswith("news_") and f.endswith(".html")],
+        reverse=True
+    )
+    tpl = Template("""
+    <html>
+      <head><meta charset="utf-8"><title>Unity AI VR News Archive</title></head>
+      <body>
+        <h1>Unity AI VR News Archive</h1>
+        <ul>
+          {% for file in files %}
+            <li><a href="{{file}}">{{file.replace('news_', '').replace('.html','')}}</a></li>
+          {% endfor %}
+        </ul>
+        <p><a href="index.html">Back to Latest</a></p>
+      </body>
+    </html>
+    """)
+    html = tpl.render(files=archive_files)
+    with open(OUT_HTML_LIST, "w", encoding="utf-8") as f:
+        f.write(html)
+    print("✅ Archive updated")
 
 def main():
     collected = []
@@ -76,11 +102,17 @@ def main():
             summary = summarize(title, url, text)
             collected.append({"title": title, "url": url, "summary": summary, "source": feed})
 
-    html = build_html(collected)
+    html = build_html(collected, DATE_STR)
+
+    # Write latest and archive file
     for path in [OUT_HTML_LATEST, OUT_HTML_ARCHIVE]:
         with open(path, "w", encoding="utf-8") as f:
             f.write(html)
-    print(f"✅ Wrote {OUT_HTML_LATEST} and {OUT_HTML_ARCHIVE}")
+
+    # Update archive list
+    update_archive()
+
+    print(f"✅ Wrote {OUT_HTML_LATEST}, {OUT_HTML_ARCHIVE}, and updated archive.html")
 
 if __name__ == "__main__":
     main()
