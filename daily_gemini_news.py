@@ -43,7 +43,7 @@ def summarize(title, url, snippet):
         f"Then add one bullet: 'Why it matters'.\n\n"
         f"Title: {title}\nURL: {url}\nContent:\n{snippet[:500]}"
     )
-    model = genai.GenerativeModel("gemini-1.5-flash")
+    model = genai.GenerativeModel("gemini-2.5-flash-lite")
     return model.generate_content(prompt).text
 
 def build_html(items, date):
