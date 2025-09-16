@@ -37,14 +37,26 @@ def fetch_article_text(url):
         except:
             return ""
 
-def summarize(title, url, snippet):
-    prompt = (
-        f"Summarize for Unity/AI/VR developers in 2-3 sentences. "
-        f"Then add one bullet: 'Why it matters'.\n\n"
-        f"Title: {title}\nURL: {url}\nContent:\n{snippet[:500]}"
-    )
-    model = genai.GenerativeModel("gemini-2.5-flash-lite")
-    return model.generate_content(prompt).text
+import time
+
+def summarize(title, url, text):
+    prompt = f"""You are an expert Unity/AI/VR news summarizer.
+    Summarize this news in 2-3 sentences (EN), then give a short Arabic translation (AR).
+    Title: {title}
+    URL: {url}
+    Content excerpt: {text[:400]}
+    Output format:
+    EN summary: ...
+    AR summary: ...
+    URL: {url}
+    """
+    try:
+        result = model.generate_content(prompt)
+        time.sleep(5)  # <-- avoid hitting 15 requests/minute quota
+        return result.text
+    except Exception as e:
+        return f"Summary failed: {e}\nURL: {url}"
+
 
 def build_html(items, date):
     tpl = Template("""
