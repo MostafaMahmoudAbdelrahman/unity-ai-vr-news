@@ -3,3 +3,4 @@ requests
 newspaper3k
 jinja2
 google-generativeai
+lxml[html_clean]
